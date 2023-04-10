@@ -1,38 +1,17 @@
 from matplotlib import pyplot as plt
+from traveling_salesman_problem_functions import get_optimal_order, get_tour_distance, get_coordinates, get_distance_table
+from tabu_s_algorithm import Tabu_Search, TS_daily_tours
+from fi_algorithm import FI_algorithm
 import time
-from TSP import get_coordinates, get_optimal_order, get_distance_table, FI_algorithm, Tabu_Search, get_tour_distance, TS_daily_tours
 
+def TSP_solve(opt_tour_name, data_set_name, is_daily, tabu_tenure, iterations):
+    # otwarcie, odczytanie i wypisanie optymalnej kolejności
+    with open(opt_tour_name, "r") as file:
+        order_opt_list = file.read().splitlines()
 
-if(__name__ == "__main__"):
-
-    print("Możliwe wybory zestawu danych:\n1 - Berlin52\n2 - Att48\n3 - Eil101\n")
-    data_set_number = int(input("Wprowadź liczbę 1, 2 bądź 3 aby wybrać zestaw danych.\n"))
-    while(data_set_number != 1 and data_set_number != 2 and data_set_number != 3):
-        data_set_number = int(input("Wprowadź liczbę 1, 2 bądź 3 aby dokonać wyboru zestawu danych!\n"))
-
-    if(data_set_number == 1):
-        # otwarcie, odczytanie i wypisanie optymalnej kolejności
-        with open("berlin52.opt.tour.txt", "r") as f:
-            order_opt_list = f.read().splitlines()
-
-        # otwarcie i wczytanie pliku
-        with open("berlin52.txt", "r") as f:
-            city_list = f.read().splitlines()
-
-    elif(data_set_number == 2):
-        with open("att48.opt.txt", "r") as f:
-            order_opt_list = f.read().splitlines()
-
-        with open("att48.txt", "r") as f:
-            city_list = f.read().splitlines()
-
-    elif(data_set_number == 3):
-
-        with open("eil101.opt.txt", "r") as f:
-            order_opt_list = f.read().splitlines()
-
-        with open("eil101.txt", "r") as f:
-            city_list = f.read().splitlines()
+    # otwarcie i wczytanie pliku
+    with open(data_set_name, "r") as file:
+        city_list = file.read().splitlines()
 
     order_opt = get_optimal_order(order_opt_list)
     x, y = get_coordinates(city_list, 6)
@@ -42,20 +21,6 @@ if(__name__ == "__main__"):
     start_time_FI = time.time()
     order = FI_algorithm(x, y, dist_mat)
     exec_time_FI = time.time() - start_time_FI
-    print("FI exec time:", exec_time_FI)
-
-    print("Wybierz:\n1 jeśli chcesz aby dniówki były uwzględnione\n2 jeśli chcesz aby nie były uwzględniane")
-    dniowki_number = int(input("Wprowadź liczbę 1 bądź 2.\n"))
-    while(data_set_number != 1 and data_set_number != 2):
-        dniowki_number = int(input("Wprowadź liczbę 1 bądź 2!\n"))
-
-    if(dniowki_number == 1):
-        dniowki = True
-    else:
-        dniowki = False
-    
-    tabu_tenure = 12
-    iterations = 250
 
     f = []
     d = []
@@ -63,19 +28,20 @@ if(__name__ == "__main__"):
     best_solution = Tabu_Search(order, tabu_tenure, dist_mat, iterations, f, d)
     exec_time = time.time() - start_time
 
-    print("czas dzialania TS", exec_time)
+    print("Czas działania FI", exec_time_FI)
+    print("Czas dzialania TS", exec_time)
     td = get_tour_distance(order, dist_mat)
-    print("Algorytm budujacy FI", td)
+    print("Długość trasy dla algorytmu budującego FI", td)
     td_opt = get_tour_distance(order_opt, dist_mat)
-    print("Optymalna kolejnosc", td_opt)
+    print("Długość trasy dla optymalnej kolejności", td_opt)
     g = (td - td_opt) / td_opt * 100
     print("Roznica w długości trasy algorytmu budujacego i optymalnej kolejnosco", g, "%.")
     td_ts = get_tour_distance(best_solution, dist_mat)
-    print("FI + TS", td_ts)
+    print("Długość trasy dla algorytmów FI i TS", td_ts)
     g_ts = (td_ts - td_opt) / td_opt * 100
     print("Roznica w długości trasy algorytmu budujacego i optymaluzujacego TS i optymalnej kolejnosco", g_ts, "%.")
 
-    if(dniowki is True):
+    if(is_daily is True):
         ff = []
         dd = []
         gg = []
@@ -89,19 +55,16 @@ if(__name__ == "__main__"):
         start_daily = time.time()
         daily_best, best_daily_tour_count = TS_daily_tours(order, limit, base, tabu_tenure, dist_mat, iterations, ff, dd, gg, fff, ddd, ggg)
         end_daily = time.time() - start_daily
-        print("czas dzialania TS dniowki", end_daily)
+        print("czas dzialania TS is_daily", end_daily)
         print(daily_best)
 
-    
-    if(dniowki is True):
+    if(is_daily is True):
         td_db = get_tour_distance(daily_best, dist_mat)
         print("Dionwki dystans laczny", td_db)
         g_ts = (td_db - td_opt) / td_opt * 100
         print("Roznica w długości trasy dniówek TS i optymalnej kolejnosco", g_ts, "%.")
 
-
-
-     # rysowanie koordynatów na mapie
+    # rysowanie koordynatów na mapie
     plt.figure(1)
     plt.title("Trasa dla algorytmu kontrukcyjnego FI")
     x2 = []
@@ -147,7 +110,7 @@ if(__name__ == "__main__"):
 
     plt.plot(x4, y4, "o-k", linewidth = 1.5, markersize = 3.0)
 
-    if(dniowki is True):
+    if(is_daily is True):
         plt.figure(5)
         plt.title("Wykres przedstawiający przebieg wyznaczonych tras\n dla kolejnych dniówek")
         colors = ["royalblue", "limegreen", "darkorange", "magenta", "midnightblue", "firebrick", "deeppink", "grey", "deepskyblue", "sienna", "lime", "gold", "turquoise", "darkcyan", "purple", "darkgoldenrod", "brown", "darkolivegreen", "orange"]
@@ -204,7 +167,6 @@ if(__name__ == "__main__"):
         plt.xlabel("iteracje")
         plt.ylabel("długość trasy")
         plt.legend()
-
 
     plt.figure(7)
     plt.plot(f, label = "długość trasy wyznaczonej w danej iteracji", color = "royalblue")
